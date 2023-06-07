@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tetris Game</title>
+  <style>
+    body {
+      text-align: center;
+    }
+
+    #game-board {
+      display: inline-block;
+      width: 300px;
+      height: 600px;
+      border: 1px solid #000;
+      position: relative;
+    }
+
+    .cell {
+      width: 29px;
+      height: 29px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      position: absolute;
+    }
+
+    .tetromino {
+      background-color: #000;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tetris Game</h1>
+  <div id="game-board"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const gameBoard = document.getElementById('game-board');
+      const boardWidth = 10;
+      const boardHeight = 20;
+      const boardSize = boardWidth * boardHeight;
+      const cells = [];
+
+      // Create the game board cells
+      for (let i = 0; i < boardSize; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        gameBoard.appendChild(cell);
+        cells.push(cell);
+      }
+
+      // Tetromino shapes
+      const tetrominoes = [
+        [[1, boardWidth + 1, boardWidth * 2 + 1, 2], [boardWidth, boardWidth + 1, boardWidth + 2, boardWidth * 2 + 2]],
+        [[0, boardWidth, boardWidth + 1, boardWidth * 2 + 1], [boardWidth + 1, boardWidth + 2, boardWidth * 2, boardWidth * 2 + 1]],
+        [[1, boardWidth, boardWidth + 1, boardWidth + 2], [1, boardWidth + 1, boardWidth * 2 + 1, boardWidth * 2 + 2]],
+        [[0, 1, boardWidth + 1, boardWidth + 2], [1, boardWidth + 1, boardWidth + 2, boardWidth * 2 + 2]],
+        [[1, boardWidth + 1, boardWidth * 2 + 1, boardWidth * 3 + 1], [boardWidth, boardWidth + 1, boardWidth + 2, boardWidth + 3]],
+      ];
+
+      let currentPosition = 4;
+      let currentRotation = 0;
+      let currentTetromino = getRandomTetromino();
+
+      // Draw the current tetromino on the board
+      function draw() {
+        currentTetromino[currentRotation].forEach(index => {
+          cells[currentPosition + index].classList.add('tetromino');
+        });
+      }
+
+      // Erase the current tetromino from the board
+      function erase() {
+        currentTetromino[currentRotation].forEach(index => {
+          cells[currentPosition + index].classList.remove('tetromino');
+        });
+      }
+
+      // Move the tetromino down
+      function moveDown() {
+        erase();
+        currentPosition += boardWidth;
+        draw();
+        freeze();
+      }
+
+      // Freeze the tetromino when it reaches the bottom or lands on another tetromino
+      function freeze() {
+        if (currentTetromino[currentRotation].some(index => cells[currentPosition + index + boardWidth].classList.contains('taken'))) {
+          currentTetromino[currentRotation].forEach(index => {
+            cells[currentPosition + index].classList.add('taken');
+          });
+
+          // Spawn a new tetromino
+          currentTetromino = getRandomTetromino();
+          currentRotation = 0;
+          currentPosition = 4;
+          draw();
+          gameOver();
+        }
+      }
+
+      // Check if the game is over
+      function gameOver() {
+        if (currentTetromino[currentRotation].some(index => cells[currentPosition + index].classList.contains('taken'))) {
+          clearInterval(timerId);
+          alert('Game Over!');
+        }
+      }
+
+      // Generate a random tetromino
+      function getRandomTetromino() {
+        return tetrominoes[Math.floor(Math.random() * tetrominoes.length)];
+      }
+
+      // Rotate the tetromino
+      function rotate() {
+        erase();
+        currentRotation = (currentRotation + 1) % currentTetromino.length;
+
+        // Check if rotation is valid, prevent rotation at board edges
+        const isAtLeftEdge = currentTetromino[currentRotation].some(index => (currentPosition + index) % boardWidth === 0);
+        const isAtRightEdge = currentTetromino[currentRotation].some(index => (currentPosition + index) % boardWidth === boardWidth - 1);
+
+        if (isAtLeftEdge && isAtRightEdge) {
+          // Restore previous rotation if it exceeds board boundaries
+          currentRotation = (currentRotation - 1 + currentTetromino.length) % currentTetromino.length;
+        }
+
+        draw();
+      }
+
+      // Move the tetromino left
+      function moveLeft() {
+        erase();
+
+        const isAtLeftEdge = currentTetromino[currentRotation].some(index => (currentPosition + index) % boardWidth === 0);
+
+        if (!isAtLeftEdge) {
+          currentPosition--;
+        }
+
+        if (currentTetromino[currentRotation].some(index => cells[currentPosition + index].classList.contains('taken'))) {
+          currentPosition++;
+        }
+
+        draw();
+      }
+
+      // Move the tetromino right
+      function moveRight() {
+        erase();
+
+        const isAtRightEdge = currentTetromino[currentRotation].some(index => (currentPosition + index) % boardWidth === boardWidth - 1);
+
+        if (!isAtRightEdge) {
+          currentPosition++;
+        }
+
+        if (currentTetromino[currentRotation].some(index => cells[currentPosition + index].classList.contains('taken'))) {
+          currentPosition--;
+        }
+
+        draw();
+      }
+
+      // Handle keyboard events
+      function control(event) {
+        if (event.keyCode === 37) {
+          moveLeft();
+        } else if (event.keyCode === 38) {
+          rotate();
+        } else if (event.keyCode === 39) {
+          moveRight();
+        } else if (event.keyCode === 40) {
+          moveDown();
+        }
+      }
+
+      document.addEventListener('keydown', control);
+
+      draw();
+      const timerId = setInterval(moveDown, 1000);
+    });
+  </script>
+</body>
+</html>
